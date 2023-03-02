@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS model_registry
+(
+    id SERIAL PRIMARY KEY,
+    version varchar(32) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

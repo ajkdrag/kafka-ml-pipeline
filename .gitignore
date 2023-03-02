@@ -1,0 +1,4 @@
+data/
+env/
+volumes/
+*egg-info/
