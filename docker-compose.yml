@@ -1,5 +1,23 @@
 version: '3.1'
 services:
+  cassandra:
+    image: cassandra:latest
+    volumes:
+      - cassandra_storage:/var/lib/cassandra/data
+    ports:
+      - 9042:9042
+    environment:
+      - HEAP_NEWSIZE=128M
+      - MAX_HEAP_SIZE=256M
+    networks:
+      - common
+  cassandra-init:
+    image: cassandra:latest
+    depends_on:
+      - cassandra
+    volumes:
+      - cql_scripts_storage:/home/
+    command: /bin/bash -c "sleep 60 && echo loading cassandra keyspace && cqlsh cassandra -f /home/create_tables.cql"
   db:
     image: mysql:8.0.17 
     environment:
@@ -46,8 +64,14 @@ services:
       - common
     depends_on:
       - minio
-  jupyter:
-    image: jupyter/datascience-notebook:python-3.7
+  spark-jupyter:
+    build:
+      context: ./spark/notebook
+      args:
+        openjdk_version: 11
+        spark_version: 3.0.2
+        hadoop_version: 3.2
+        spark_checksum: 0E35D769AF1D94484AFAB95E2759FBD34E692AA2A6DB2FEFB0EE654BE9DDA1F01C96412F03B5E6AE4BDBA69DC622DD12CAC95002BEAB24096FD315EEF2A5F245
     user: root
     working_dir: "/home/ajkdrag"
     ports:
@@ -67,6 +91,82 @@ services:
     volumes:
       - notebook_storage:/home/ajkdrag/work
       - data_storage:/home/ajkdrag/data
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.2
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - common
+  broker:
+    image: confluentinc/cp-kafka:7.3.2
+    ports:
+      - "19092:9092"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://broker:29092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    networks:
+      - common
+  spark-master:
+    build:
+      context: ./spark/cluster
+    ports:
+      - "9090:8080"
+      - "7077:7077"
+    environment:
+      SPARK_LOCAL_IP: spark-master
+      SPARK_WORKLOAD: master
+    volumes:
+      - spark_storage:/opt/spark-apps
+    networks:
+      - common
+  spark-worker-1:
+    build:
+      context: ./spark/cluster
+    ports:
+      - "9091:8080"
+      - "7000:7000"
+    depends_on:
+      - spark-master
+    environment:
+      SPARK_MASTER: "spark://spark-master:7077"
+      SPARK_WORKER_CORES: 1
+      SPARK_WORKER_MEMORY: 512M 
+      SPARK_DRIVER_MEMORY: 1G 
+      SPARK_EXECUTOR_MEMORY: 512M
+      SPARK_WORKLOAD: worker
+      SPARK_LOCAL_IP: spark-worker-1
+    volumes:
+      - spark_storage:/opt/spark-apps
+    networks:
+      - common
+  spark-worker-2:
+    build:
+      context: ./spark/cluster
+    ports:
+      - "9092:8080"
+      - "7001:7000"
+    depends_on:
+      - spark-master
+    environment:
+      SPARK_MASTER: "spark://spark-master:7077"
+      SPARK_WORKER_CORES: 1
+      SPARK_WORKER_MEMORY: 512M 
+      SPARK_DRIVER_MEMORY: 1G
+      SPARK_EXECUTOR_MEMORY: 512M
+      SPARK_WORKLOAD: worker
+      SPARK_LOCAL_IP: spark-worker-2
+    volumes:
+      - spark_storage:/opt/spark-apps
+    networks:
+      - common
 networks:
   common:
     driver: bridge
@@ -74,21 +174,35 @@ volumes:
   minio_storage:
     driver_opts:
       type: none
-      device: ${PWD}/volumes/minio
+      device: ${PWD}/backend/minio
       o: bind
   notebook_storage:
     driver_opts:
       type: none
-      device: ${PWD}/volumes/notebooks
+      device: ${PWD}/notebooks
       o: bind
   data_storage:
     driver_opts:
       type: none
       device: ${PWD}/data
       o: bind
+  cassandra_storage:
+    driver_opts:
+      type: none
+      device: ${PWD}/backend/databases/cassandra
+      o: bind
   sql_scripts_storage:
     driver_opts:
       type: none
-      device: ${PWD}/sql
+      device: ${PWD}/scripts/mysql
       o: bind
-
+  cql_scripts_storage:
+    driver_opts:
+      type: none
+      device: ${PWD}/scripts/cassandra
+      o: bind
+  spark_storage:
+    driver_opts:
+      type: none
+      device: ${PWD}/spark/apps
+      o: bind
