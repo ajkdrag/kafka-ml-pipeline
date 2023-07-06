@@ -59,9 +59,10 @@ RUN if [ -z "${scala_version}" ]; then \
   ln -s "${SPARK_HOME}/sbin/spark-config.sh" /usr/local/bin/before-notebook.d/spark-config.sh
 
 
-# Add hadoop-aws and aws-sdk
+# Add hadoop-aws and aws-sdk and cassandra-connector
 RUN wget https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/${aws_hadoop_version}/hadoop-aws-${aws_hadoop_version}.jar -P "${SPARK_HOME}/jars/" && \
-    wget https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/${aws_sdk_version}/aws-java-sdk-bundle-${aws_sdk_version}.jar -P "${SPARK_HOME}/jars/"
+    wget https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/${aws_sdk_version}/aws-java-sdk-bundle-${aws_sdk_version}.jar -P "${SPARK_HOME}/jars/" && \
+    wget https://repo1.maven.org/maven2/com/datastax/spark/spark-cassandra-connector-assembly_2.12/3.0.0/spark-cassandra-connector-assembly_2.12-3.0.0.jar -P "${SPARK_HOME}/jars/"
 # Adding JetS3t libary
 RUN wget https://repo1.maven.org/maven2/net/java/dev/jets3t/jets3t/0.9.4/jets3t-0.9.4.jar -P "${SPARK_HOME}/jars/"
 

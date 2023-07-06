@@ -1,0 +1,22 @@
+{
+    "spark": {
+        "app_name": "fraud_detection",
+        "master": "spark://spark-master:7077",
+        "jars": [
+            "/usr/local/spark/jars/hadoop-aws-3.2.0.jar",
+            "/usr/local/spark/jars/aws-java-sdk-bundle-1.11.375.jar",
+            "/usr/local/spark/jars/spark-cassandra-connector-assembly_2.12-3.0.0.jar"
+        ],
+        "cassandra_host": "cassandra"
+    },
+    "cassandra": {
+        "table_customer": "customer",
+        "table_fraud": "fraud_transaction",
+        "table_non_fraud": "non_fraud_transaction",
+        "keyspace": "creditcard"
+    },
+    "s3": {
+        "path_transactions": "s3a://realtime-ml/data/raw/transactions.csv",
+        "path_customer": "s3a://realtime-ml/data/raw/customer.csv"
+    }
+}

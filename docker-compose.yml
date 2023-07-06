@@ -9,6 +9,7 @@ services:
     environment:
       - HEAP_NEWSIZE=128M
       - MAX_HEAP_SIZE=256M
+      - CASSANDRA_CLUSTER_NAME=ML_Cluster
     networks:
       - common
   cassandra-init:
@@ -18,6 +19,8 @@ services:
     volumes:
       - cql_scripts_storage:/home/
     command: /bin/bash -c "sleep 60 && echo loading cassandra keyspace && cqlsh cassandra -f /home/create_tables.cql"
+    networks:
+      - common
   db:
     image: mysql:8.0.17 
     environment:
@@ -79,8 +82,7 @@ services:
     environment:
       GRANT_SUDO: "yes"
       NB_USER: ajkdrag
-      NB_UID: 1234
-      NB_GID: 1234
+      NB_UID: ${UID}
       CHOWN_HOME: "yes"
       CHOWN_HOME_OPTS: "-R"
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
@@ -91,6 +93,7 @@ services:
     volumes:
       - notebook_storage:/home/ajkdrag/work
       - data_storage:/home/ajkdrag/data
+      - package_storage:/home/ajkdrag/src
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.2
     environment:
@@ -206,3 +209,9 @@ volumes:
       type: none
       device: ${PWD}/spark/apps
       o: bind
+  package_storage:
+    driver_opts:
+      type: none
+      device: ${PWD}/src
+      o: bind
+
