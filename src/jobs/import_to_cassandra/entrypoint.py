@@ -8,21 +8,21 @@ from utils.udfs import get_haversine_distance_udf
 class ImportToCassandra(BaseSparkJob):
     def setup(self):
         super().setup()
-        self.spark_opts = {
+        spark_opts = {
             "spark.cassandra.connection.host": self.config.spark.cassandra_host,
             "keyspace": self.config.cassandra.keyspace,
             "confirm.truncate": True,
         }
         self.spark_opts_fraud_table = {
-            **self.spark_opts,
+            **spark_opts,
             "table": self.config.cassandra.table_fraud,
         }
         self.spark_opts_non_fraud_table = {
-            **self.spark_opts,
+            **spark_opts,
             "table": self.config.cassandra.table_non_fraud,
         }
         self.spark_opts_customer_table = {
-            **self.spark_opts,
+            **spark_opts,
             "table": self.config.cassandra.table_customer,
         }
 

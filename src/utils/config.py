@@ -3,6 +3,29 @@ from dataclasses import dataclass
 
 
 @dataclass
+class MLConfig:
+    feature_cols: list
+    train_pct: float
+    seed: int
+    feature_col_name: str
+    label_col_name: str
+    kmeans_extra_args: dict
+    model_extra_args: dict
+    
+    @classmethod
+    def from_dict(cls: t.Type["MLConfig"], obj: dict):
+        return cls(
+            feature_cols=obj["feature_cols"],
+            train_pct=obj.get("train_pct", 0.7),
+            seed=obj.get("seed", 123),
+            feature_col_name=obj.get("feature_col_name", "features"),
+            label_col_name=obj.get("label_col_name", "label"),
+            kmeans_extra_args=obj.get("kmeans_extra_args", {}),
+            model_extra_args=obj.get("model_extra_args", {})
+        )
+
+
+@dataclass
 class SparkConfig:
     app_name: str
     master: str
@@ -60,6 +83,7 @@ class Config:
     spark: SparkConfig
     cassandra: CassandraConfig
     s3: S3Config
+    ml: MLConfig
 
     @classmethod
     def from_dict(cls: t.Type["Config"], obj: dict):
@@ -67,4 +91,5 @@ class Config:
             spark=SparkConfig.from_dict(obj["spark"]),
             cassandra=CassandraConfig.from_dict(obj["cassandra"]),
             s3=S3Config.from_dict(obj["s3"]),
+            ml=MLConfig.from_dict(obj["ml"])
         )

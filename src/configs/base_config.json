@@ -18,5 +18,23 @@
     "s3": {
         "path_transactions": "s3a://realtime-ml/data/raw/transactions.csv",
         "path_customer": "s3a://realtime-ml/data/raw/customer.csv"
+    },
+    "ml": {
+        "feature_cols": [
+            "cc_num",
+            "category",
+            "merchant",
+            "distance",
+            "amt",
+            "age"
+        ],
+        "kmeans_extra_args": {
+            "maxIter": 30,
+            "seed": 123
+        },
+        "model_extra_args": {
+            "maxBins": 700,
+            "seed": 123
+        }
     }
 }
