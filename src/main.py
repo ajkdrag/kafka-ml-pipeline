@@ -1,5 +1,6 @@
 import argparse
 import importlib
+from uuid import uuid4
 
 from pyspark.sql import SparkSession
 from utils.config_parser import ConfigParser
@@ -17,7 +18,9 @@ def parse_opt():
 
 def parse_config(config_file):
     cfg_parser = ConfigParser(config_file)
-    return cfg_parser.parse_config()
+    cfg = cfg_parser.parse_config()
+    cfg.run_id = uuid4().hex
+    return cfg
 
 
 def init_or_get_spark(config, spark):

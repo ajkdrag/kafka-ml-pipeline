@@ -52,12 +52,14 @@ class SparkConfig:
 class S3Config:
     path_transactions: str
     path_customer: str
+    path_ml_artifacts: str
 
     @classmethod
     def from_dict(cls: t.Type["S3Config"], obj: dict):
         return cls(
             path_transactions=obj["path_transactions"],
             path_customer=obj["path_customer"],
+            path_ml_artifacts=obj["path_ml_artifacts"],
         )
 
 
@@ -84,6 +86,7 @@ class Config:
     cassandra: CassandraConfig
     s3: S3Config
     ml: MLConfig
+    run_id: t.Optional[str] = ""
 
     @classmethod
     def from_dict(cls: t.Type["Config"], obj: dict):
@@ -91,5 +94,5 @@ class Config:
             spark=SparkConfig.from_dict(obj["spark"]),
             cassandra=CassandraConfig.from_dict(obj["cassandra"]),
             s3=S3Config.from_dict(obj["s3"]),
-            ml=MLConfig.from_dict(obj["ml"])
+            ml=MLConfig.from_dict(obj["ml"]),
         )

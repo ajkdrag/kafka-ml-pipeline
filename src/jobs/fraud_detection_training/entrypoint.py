@@ -1,3 +1,4 @@
+import os
 import pyspark.sql.types as T
 import pyspark.sql.functions as F
 from jobs.base import BaseSparkJob
@@ -23,6 +24,8 @@ class FraudDetectionTraining(BaseSparkJob):
             **spark_opts,
             "table": self.config.cassandra.table_non_fraud,
         }
+        self.path_feature_pipeline = os.path.join(self.config.s3.path_ml_artifacts, self.config.run_id, "feature_pipeline")
+        self.path_model = os.path.join(self.config.s3.path_ml_artifacts, self.config.run_id, "model")
 
     def load_from_cassandra(self, options):
         return (
@@ -44,6 +47,7 @@ class FraudDetectionTraining(BaseSparkJob):
         test_features_df = feature_transfomer.transform(test_df)
 
         # TODO: save pipeline
+        feature_transfomer.save(self.path_feature_pipeline)
 
         # 2. undersample negative class in train data.
         fraud_train_df = train_features_df.filter(F.col("is_fraud") == 1).select(
@@ -100,7 +104,7 @@ class FraudDetectionTraining(BaseSparkJob):
             model_extra_args=self.config.ml.model_extra_args,
         )
 
-        # TODO: save the model
+        model.save(self.path_model)
         print(metrics)
 
 

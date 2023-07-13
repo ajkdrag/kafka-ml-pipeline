@@ -9,3 +9,8 @@ start:
 	${compose_up} ${services}
 stop:
 	${compose_down} ${services}
+stream:
+	set -o allexport; \
+	source .env; \
+	set +o allexport; \
+	python3 scripts/python/stream_to_kafka.py;

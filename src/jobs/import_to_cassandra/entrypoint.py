@@ -26,6 +26,7 @@ class ImportToCassandra(BaseSparkJob):
             "table": self.config.cassandra.table_customer,
         }
 
+        
     def load_customer_df(self):
         customer_df = self.spark.read.csv(
             self.config.s3.path_customer, schema=customer_schema, header=True

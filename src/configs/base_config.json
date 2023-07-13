@@ -17,7 +17,8 @@
     },
     "s3": {
         "path_transactions": "s3a://realtime-ml/data/raw/transactions.csv",
-        "path_customer": "s3a://realtime-ml/data/raw/customer.csv"
+        "path_customer": "s3a://realtime-ml/data/raw/customer.csv",
+        "path_ml_artifacts": "s3a://realtime-ml/ml_artifacts/"
     },
     "ml": {
         "feature_cols": [

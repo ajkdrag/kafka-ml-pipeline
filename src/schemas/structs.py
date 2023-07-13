@@ -42,7 +42,9 @@ transaction_schema = StructType(
     ]
 )
 
-fraud_transaction_schema = transaction_schema.add(StructField(Transaction.is_fraud.value, DoubleType(), True))
+fraud_transaction_schema = transaction_schema.add(
+    StructField(Transaction.is_fraud.value, DoubleType(), True)
+)
 
 realtime_transaction_schema = StructType(
     [
