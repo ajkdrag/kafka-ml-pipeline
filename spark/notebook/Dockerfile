@@ -59,13 +59,15 @@ RUN if [ -z "${scala_version}" ]; then \
   ln -s "${SPARK_HOME}/sbin/spark-config.sh" /usr/local/bin/before-notebook.d/spark-config.sh
 
 
-# Add hadoop-aws and aws-sdk and cassandra-connector
+# Add jars
 RUN wget https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/${aws_hadoop_version}/hadoop-aws-${aws_hadoop_version}.jar -P "${SPARK_HOME}/jars/" && \
     wget https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/${aws_sdk_version}/aws-java-sdk-bundle-${aws_sdk_version}.jar -P "${SPARK_HOME}/jars/" && \
-    wget https://repo1.maven.org/maven2/com/datastax/spark/spark-cassandra-connector-assembly_2.12/3.0.0/spark-cassandra-connector-assembly_2.12-3.0.0.jar -P "${SPARK_HOME}/jars/"
-# Adding JetS3t libary
-RUN wget https://repo1.maven.org/maven2/net/java/dev/jets3t/jets3t/0.9.4/jets3t-0.9.4.jar -P "${SPARK_HOME}/jars/"
-
+    wget https://repo1.maven.org/maven2/com/datastax/spark/spark-cassandra-connector-assembly_2.12/3.0.0/spark-cassandra-connector-assembly_2.12-3.0.0.jar -P "${SPARK_HOME}/jars/" && \
+    wget https://repo1.maven.org/maven2/org/apache/spark/spark-sql-kafka-0-10_2.12/3.0.0/spark-sql-kafka-0-10_2.12-3.0.0.jar -P "${SPARK_HOME}/jars/" && \
+    wget https://repo1.maven.org/maven2/org/apache/kafka/kafka-clients/2.4.1/kafka-clients-2.4.1.jar -P "${SPARK_HOME}/jars/" && \
+    wget https://repo1.maven.org/maven2/net/java/dev/jets3t/jets3t/0.9.4/jets3t-0.9.4.jar -P "${SPARK_HOME}/jars/" && \
+    wget https://repo1.maven.org/maven2/org/apache/commons/commons-pool2/2.6.2/commons-pool2-2.6.2.jar -P "${SPARK_HOME}/jars/" && \
+    wget https://repo1.maven.org/maven2/org/apache/spark/spark-token-provider-kafka-0-10_2.12/3.0.0/spark-token-provider-kafka-0-10_2.12-3.0.0.jar -P "${SPARK_HOME}/jars/" 
 
 
 # Configure IPython system-wide
@@ -78,7 +80,7 @@ USER ${NB_UID}
 ARG conda_env=python37
 ARG py_ver=3.7
 
-RUN mamba create --quiet --yes -p "${CONDA_DIR}/envs/${conda_env}" python=${py_ver} ipython ipykernel pyarrow cassandra-driver && \
+RUN mamba create --quiet --yes -p "${CONDA_DIR}/envs/${conda_env}" python=${py_ver} ipython ipykernel pyarrow cassandra-driver kafka-python && \
     mamba clean --all -f -y
 
 USER root

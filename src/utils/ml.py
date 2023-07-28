@@ -1,11 +1,11 @@
 import pyspark.sql.types as T
 from pyspark.context import SparkContext
 from pyspark.sql.dataframe import DataFrame
-from pyspark.ml.classification import RandomForestClassifier
+from pyspark.ml.classification import RandomForestClassifier, RandomForestClassificationModel
 from pyspark.ml.clustering import KMeans
 from pyspark.ml.evaluation import MulticlassClassificationEvaluator
 from pyspark.ml.feature import StringIndexer, OneHotEncoder, VectorAssembler
-from pyspark.ml.pipeline import Pipeline
+from pyspark.ml.pipeline import Pipeline, PipelineModel
 from pyspark.ml.linalg import Vectors
 
 
@@ -85,3 +85,11 @@ def kmeans_undersampling(
     cluster_centers = model.clusterCenters()
     rdd = sc.parallelize([c.tolist() for c in cluster_centers])
     return rdd.map(lambda x: (Vectors.dense(x),)).toDF([features_col])
+
+
+def load_feature_pipeline(pipeline_path):
+    return PipelineModel.load(pipeline_path)
+
+
+def load_random_forest_model(model_path):
+    return RandomForestClassificationModel.load(model_path)

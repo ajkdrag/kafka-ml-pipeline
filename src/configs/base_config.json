@@ -1,4 +1,5 @@
 {
+    "run_id": "9d024f2b89d44f768f3d33872e2656ef",
     "spark": {
         "app_name": "fraud_detection",
         "master": "spark://spark-master:7077",
@@ -37,5 +38,10 @@
             "maxBins": 700,
             "seed": 123
         }
+    },
+    "kafka": {
+        "bootstrap_server": "broker:29092",
+        "starting_offset": "earliest",
+        "topic": "realtime-ml_v4"
     }
 }

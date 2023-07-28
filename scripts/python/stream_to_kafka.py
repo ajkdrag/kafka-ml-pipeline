@@ -1,10 +1,11 @@
 import os
+import csv
 import json
 import boto3
 from datetime import datetime
 from urllib.parse import urlparse
+from time import sleep
 from kafka import KafkaProducer
-from kafka.errors import KafkaError
 
 
 def get_s3_resource(**kwargs):
@@ -16,14 +17,18 @@ def get_s3_resource(**kwargs):
     )
 
 
-def read_from_s3(s3_obj, bucket, key, maxlines=10):
+def read_from_s3(s3_obj, bucket, key):
     obj = s3_obj.Object(bucket, key)
     data = obj.get()["Body"].read().decode()
-    for idx, line in enumerate(data.splitlines()):
-        print(idx)
-        yield line
-        if idx == maxlines:
-            break
+    reader = csv.reader(
+        data.splitlines()[1:],
+        delimiter=",",
+        quotechar='"',
+        quoting=csv.QUOTE_ALL,
+        skipinitialspace=True,
+    )
+    for record in reader:
+        yield record
 
 
 def on_send_success(record_metadata):
@@ -35,8 +40,7 @@ def on_send_error(excp):
     print("I am an errback", exc_info=excp)
 
 
-def create_record(line):
-    record = line.split(",")
+def rec2json(record):
     now = str(datetime.now())
     data = {
         "cc_num": record[0],
@@ -44,16 +48,13 @@ def create_record(line):
         "last": record[2],
         "trans_num": record[3],
         "trans_time": now,
-        "category": record[6],
-        "merchant": record[7],
-        "amt": record[8],
-        "merch_lat": record[9],
-        "merch_long": record[10],
-        "distance": record[11],
-        "age": record[12],
+        "category": record[7],
+        "merchant": record[8],
+        "amt": record[9],
+        "merch_lat": record[10],
+        "merch_long": record[11],
     }
-    print(data)
-    return data
+    return record[-1], data
 
 
 if __name__ == "__main__":
@@ -73,9 +74,15 @@ if __name__ == "__main__":
         value_serializer=lambda m: json.dumps(m).encode("ascii"),
     )
 
-    for line in read_from_s3(s3_obj, bucket, key):
-        json_payload = create_record(line)
-        producer.send(bucket, json_payload).add_callback(on_send_success).add_errback(
-            on_send_error
-        )
+    maxlines = 10
+    for record in read_from_s3(s3_obj, bucket, key):
+        is_fraud, json_payload = rec2json(record)
+        if is_fraud == "1":
+            producer.send(bucket + "_v4", json_payload).add_callback(
+                on_send_success
+            ).add_errback(on_send_error)
+            sleep(6)
+            maxlines -= 1
+            if maxlines <= 0:
+                break
     producer.flush()

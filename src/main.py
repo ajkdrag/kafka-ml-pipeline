@@ -19,7 +19,6 @@ def parse_opt():
 def parse_config(config_file):
     cfg_parser = ConfigParser(config_file)
     cfg = cfg_parser.parse_config()
-    cfg.run_id = uuid4().hex
     return cfg
 
 

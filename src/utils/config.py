@@ -1,5 +1,6 @@
 import typing as t
 from dataclasses import dataclass
+from uuid import uuid4
 
 
 @dataclass
@@ -11,7 +12,7 @@ class MLConfig:
     label_col_name: str
     kmeans_extra_args: dict
     model_extra_args: dict
-    
+
     @classmethod
     def from_dict(cls: t.Type["MLConfig"], obj: dict):
         return cls(
@@ -21,7 +22,7 @@ class MLConfig:
             feature_col_name=obj.get("feature_col_name", "features"),
             label_col_name=obj.get("label_col_name", "label"),
             kmeans_extra_args=obj.get("kmeans_extra_args", {}),
-            model_extra_args=obj.get("model_extra_args", {})
+            model_extra_args=obj.get("model_extra_args", {}),
         )
 
 
@@ -81,18 +82,36 @@ class CassandraConfig:
 
 
 @dataclass
+class KafkaConfig:
+    bootstrap_server: str
+    starting_offset: str
+    topic: str
+
+    @classmethod
+    def from_dict(cls: t.Type["KafkaConfig"], obj: dict):
+        return cls(
+            bootstrap_server=obj["bootstrap_server"],
+            starting_offset=obj.get("starting_offset", "earliest"),
+            topic=obj["topic"],
+        )
+
+
+@dataclass
 class Config:
     spark: SparkConfig
     cassandra: CassandraConfig
+    kafka: KafkaConfig
     s3: S3Config
     ml: MLConfig
-    run_id: t.Optional[str] = ""
+    run_id: str
 
     @classmethod
     def from_dict(cls: t.Type["Config"], obj: dict):
         return cls(
+            run_id=obj.get("run_id", uuid4().hex),
             spark=SparkConfig.from_dict(obj["spark"]),
             cassandra=CassandraConfig.from_dict(obj["cassandra"]),
+            kafka=KafkaConfig.from_dict(obj["kafka"]),
             s3=S3Config.from_dict(obj["s3"]),
             ml=MLConfig.from_dict(obj["ml"]),
         )

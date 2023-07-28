@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class Customer(Enum):
     cc_num = "cc_num"
     first = "first"
@@ -33,3 +34,19 @@ class Transaction(Enum):
     is_fraud = "is_fraud"
     kafka_partition = "partition"
     kafka_offset = "offset"
+
+
+fraud_transaction_columns = [
+    "cc_num",
+    "trans_time",
+    "trans_num",
+    "category",
+    "merchant",
+    "amt",
+    "merch_lat",
+    "merch_long",
+    "distance",
+    "age",
+    "is_fraud",
+]
+non_fraud_transaction_columns = fraud_transaction_columns.copy()
