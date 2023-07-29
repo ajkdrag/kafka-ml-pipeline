@@ -4,10 +4,7 @@ import pyspark.sql.types as T
 import pyspark.sql.functions as F
 from jobs.base import BaseSparkJob
 from schemas.structs import realtime_transaction_schema
-from schemas.column_enums import (
-    fraud_transaction_columns,
-    non_fraud_transaction_columns,
-)
+from schemas.column_enums import non_target_columns, target_column
 from utils.udfs import get_haversine_distance_udf
 from utils.ml import load_feature_pipeline, load_random_forest_model
 from functools import partial
@@ -38,6 +35,16 @@ class RealtimeInference(BaseSparkJob):
             **spark_opts,
             "table": self.config.cassandra.table_non_fraud,
         }
+        self.fraud_batch_writer = partial(
+            RealtimeInference.writer,
+            self.config.spark.cassandra_format,
+            self.spark_opts_fraud_table,
+        )
+        self.non_fraud_batch_writer = partial(
+            RealtimeInference.writer,
+            self.config.spark.cassandra_format,
+            self.spark_opts_non_fraud_table,
+        )
 
         self.path_feature_pipeline = os.path.join(
             self.config.s3.path_ml_artifacts, self.config.run_id, "feature_pipeline.out"
@@ -66,8 +73,6 @@ class RealtimeInference(BaseSparkJob):
             ),
         )
         customer_age_df.cache()
-        print("Customer age df done.")
-        customer_age_df.show(n=3)
 
         transactions_df = self.read_from_kafka()
         transactions_df = (
@@ -100,18 +105,11 @@ class RealtimeInference(BaseSparkJob):
                     2,
                 ),
             )
-            .select(
-                "cc_num",
-                "trans_num",
-                F.to_timestamp("trans_time").alias("trans_time"),
-                "category",
-                "merchant",
-                "amt",
-                "merch_lat",
-                "merch_long",
-                "distance",
-                "age",
+            .withColumn(
+                "trans_time",
+                F.to_timestamp("trans_time"),
             )
+            .select(*non_target_columns)
         )
 
         print("Done processing.")
@@ -122,50 +120,34 @@ class RealtimeInference(BaseSparkJob):
 
         model = load_random_forest_model(self.path_model)
         predictions_df = model.transform(features_df).withColumnRenamed(
-            "prediction", "is_fraud"
+            "prediction", target_column
         )
         print("Model inference done.")
 
-        fraud_predictions_df = predictions_df.filter(F.col("is_fraud") == 1.0).select(
-            fraud_transaction_columns
-        )
+        fraud_predictions_df = predictions_df.filter(
+            F.col(target_column) == 1.0
+        ).select(*non_target_columns, target_column)
+
         non_fraud_predictions_df = predictions_df.filter(
-            F.col("is_fraud") != 1.0
-        ).select(non_fraud_transaction_columns)
+            F.col(target_column) != 1.0
+        ).select(*non_target_columns, target_column)
 
-        fraud_batch_writer = partial(
-            RealtimeInference.writer,
-            self.config.spark.cassandra_format,
-            self.spark_opts_fraud_table,
+        self.save_stream_to_cassandra(
+            fraud_predictions_df, self.fraud_batch_writer, self.spark_opts_fraud_table
         )
-        non_fraud_batch_writer = partial(
-            RealtimeInference.writer,
-            self.config.spark.cassandra_format,
-            self.spark_opts_non_fraud_table,
-        )
-        fraud_predictions_df.printSchema()
-        self.save_for_each(
-            fraud_predictions_df, fraud_batch_writer, self.spark_opts_fraud_table
-        )
-        self.save_for_each(
+        self.save_stream_to_cassandra(
             non_fraud_predictions_df,
-            non_fraud_batch_writer,
+            self.non_fraud_batch_writer,
             self.spark_opts_non_fraud_table,
-        )
-
-    def writeStreamData(self, dataFrame: DataFrame):
-        (
-            dataFrame.writeStream.format("console")
-            .outputMode("append")
-            .start()
-            .awaitTermination()
         )
 
     @staticmethod
     def writer(format, options, batch_df: DataFrame, _):
         (batch_df.write.format(format).mode("append").options(**options).save())
 
-    def save_for_each(self, df: DataFrame, batchwriter, options, mode: str = "update"):
+    def save_stream_to_cassandra(
+        self, df: DataFrame, batchwriter, options, mode: str = "update"
+    ):
         print(options)
         (
             df.writeStream.options(**options)

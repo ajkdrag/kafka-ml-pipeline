@@ -1,7 +1,7 @@
 import os
-import pyspark.sql.types as T
 import pyspark.sql.functions as F
 from jobs.base import BaseSparkJob
+from schemas.column_enums import target_column
 from utils.ml import (
     create_feature_pipeline,
     kmeans_undersampling,
@@ -38,7 +38,7 @@ class FraudDetectionTraining(BaseSparkJob):
         pipeline = create_feature_pipeline(
             train_df.schema,
             self.config.ml.feature_cols,
-            features_col=self.config.ml.feature_col_name,
+            features_col="features",
         )
 
         # 1. feature transformations
@@ -50,30 +50,30 @@ class FraudDetectionTraining(BaseSparkJob):
         feature_transfomer.save(self.path_feature_pipeline)
 
         # 2. undersample negative class in train data.
-        fraud_train_df = train_features_df.filter(F.col("is_fraud") == 1).select(
-            self.config.ml.feature_col_name,
-            F.col("is_fraud").alias(self.config.ml.label_col_name),
+        fraud_train_df = train_features_df.filter(F.col(target_column) == 1).select(
+            "features",
+            F.col(target_column).alias("label"),
         )
-        non_fraud_train_df = train_features_df.filter(F.col("is_fraud") == 0).select(
-            self.config.ml.feature_col_name
+        non_fraud_train_df = train_features_df.filter(F.col(target_column) == 0).select(
+            "features"
         )
         undersampled_non_fraud_train_df = kmeans_undersampling(
             non_fraud_train_df,
             self.spark.sparkContext,
             fraud_train_df.count(),
-            features_col=self.config.ml.feature_col_name,
+            features_col="features",
             kmeans_extra_args=self.config.ml.kmeans_extra_args,
         )
 
         # 3. prepare and return final train and test data
         final_train_df = fraud_train_df.union(
             undersampled_non_fraud_train_df.withColumn(
-                self.config.ml.label_col_name, F.lit(0.0)
+                "label", F.lit(0.0)
             )
         )
         final_test_df = test_features_df.select(
-            self.config.ml.feature_col_name,
-            F.col("is_fraud").alias(self.config.ml.label_col_name),
+            "features",
+            F.col(target_column).alias("label"),
         )
 
         return final_train_df, final_test_df
@@ -99,8 +99,8 @@ class FraudDetectionTraining(BaseSparkJob):
         model, metrics = run_random_forest_classifier(
             final_train_df,
             final_test_df,
-            label_col=self.config.ml.label_col_name,
-            features_col=self.config.ml.feature_col_name,
+            label_col="label",
+            features_col="features",
             model_extra_args=self.config.ml.model_extra_args,
         )
 

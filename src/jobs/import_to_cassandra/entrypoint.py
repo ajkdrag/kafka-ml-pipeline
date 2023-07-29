@@ -1,6 +1,7 @@
 import pyspark.sql.types as T
 import pyspark.sql.functions as F
 from jobs.base import BaseSparkJob
+from schemas.column_enums import non_target_columns, target_column
 from schemas.structs import customer_schema, fraud_transaction_schema
 from utils.udfs import get_haversine_distance_udf
 
@@ -82,23 +83,11 @@ class ImportToCassandra(BaseSparkJob):
                     2,
                 ),
             )
-            .select(
-                "cc_num",
-                "trans_num",
-                "trans_time",
-                "category",
-                "merchant",
-                "amt",
-                "merch_lat",
-                "merch_long",
-                "distance",
-                "age",
-                "is_fraud",
-            )
+            .select(*non_target_columns, target_column)
         )
         processed_df.cache()
-        fraud_df = processed_df.filter(F.col("is_fraud") == 1)
-        non_fraud_df = processed_df.filter(F.col("is_fraud") == 0)
+        fraud_df = processed_df.filter(F.col(target_column) == 1)
+        non_fraud_df = processed_df.filter(F.col(target_column) == 0)
 
         # load
         self.save_data_to_cassandra(customer_df, self.spark_opts_customer_table)

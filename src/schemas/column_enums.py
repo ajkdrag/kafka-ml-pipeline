@@ -32,11 +32,9 @@ class Transaction(Enum):
     distance = "distance"
     age = "age"
     is_fraud = "is_fraud"
-    kafka_partition = "partition"
-    kafka_offset = "offset"
 
 
-fraud_transaction_columns = [
+non_target_columns = [
     "cc_num",
     "trans_time",
     "trans_num",
@@ -47,6 +45,6 @@ fraud_transaction_columns = [
     "merch_long",
     "distance",
     "age",
-    "is_fraud",
 ]
-non_fraud_transaction_columns = fraud_transaction_columns.copy()
+
+target_column = "is_fraud"
