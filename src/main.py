@@ -4,6 +4,7 @@ from uuid import uuid4
 
 from pyspark.sql import SparkSession
 from utils.config_parser import ConfigParser
+from utils.config import Config
 
 
 def parse_opt():
@@ -22,9 +23,9 @@ def parse_config(config_file):
     return cfg
 
 
-def init_or_get_spark(config, spark):
+def init_or_get_spark(config: Config, spark=None):
     if spark is None:
-        spark = SparkSession.builder.appName(config.get("app_name")).getOrCreate()
+        spark = SparkSession.builder.appName(config.spark.app_name).getOrCreate()
     return spark
 
 

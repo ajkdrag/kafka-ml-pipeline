@@ -47,10 +47,10 @@ class RealtimeInference(BaseSparkJob):
         )
 
         self.path_feature_pipeline = os.path.join(
-            self.config.s3.path_ml_artifacts, self.config.run_id, "feature_pipeline.out"
+            self.config.s3.path_ml_artifacts, self.config.run_id, "feature_pipeline"
         )
         self.path_model = os.path.join(
-            self.config.s3.path_ml_artifacts, self.config.run_id, "model.out"
+            self.config.s3.path_ml_artifacts, self.config.run_id, "model"
         )
 
     def load_from_cassandra(self, options):

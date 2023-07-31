@@ -21,6 +21,12 @@ RUN wget --no-verbose -O apache-spark.tgz "https://archive.apache.org/dist/spark
 && tar -xf apache-spark.tgz -C /opt/spark --strip-components=1 \
 && rm apache-spark.tgz
 
+ARG aws_hadoop_version="3.2.0"
+ARG aws_sdk_version="1.11.375"
+
+# installing jars
+RUN wget https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/${aws_hadoop_version}/hadoop-aws-${aws_hadoop_version}.jar -P "${SPARK_HOME}/jars/" && \
+    wget https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/${aws_sdk_version}/aws-java-sdk-bundle-${aws_sdk_version}.jar -P "${SPARK_HOME}/jars/"
 
 # Apache spark environment
 FROM builder as apache-spark
@@ -29,6 +35,8 @@ FROM builder as apache-spark
 RUN pip3 install pyspark findspark
 
 WORKDIR /opt/spark
+
+COPY spark-defaults.conf conf
 
 ENV SPARK_MASTER_PORT=7077 \
 SPARK_MASTER_WEBUI_PORT=8080 \
